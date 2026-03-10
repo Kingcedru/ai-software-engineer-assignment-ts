@@ -1,24 +1,23 @@
 # Bug Fix Explanation
 
 ## What was the bug?
-The `HttpClient` failed to refresh the OAuth2 token when `oauth2Token` was set to a plain object (e.g., `{ accessToken: "...", expiresAt: ... }`) instead of a proper `OAuth2Token` class instance. This caused the `Authorization` header to be missing even when a "token" (albeit the wrong type) was present.
+The `HttpClient` didn't add the `Authorization` header when it received a "plain-object" token (like `{ accessToken: "...", ... }`). This made API requests fail because the token wasn't correctly processed or refreshed.
 
 ## Why did it happen?
-The original refresh condition was:
-```typescript
-if (!this.oauth2Token || (this.oauth2Token instanceof OAuth2Token && this.oauth2Token.expired))
-```
-If `oauth2Token` was a plain object, `!this.oauth2Token` was false, and `this.oauth2Token instanceof OAuth2Token` was also false. Thus, the refresh logic was skipped, but the subsequent header injection also failed because it specifically looked for an `instanceof OAuth2Token`.
+The code was only checking for two things: if the token was missing (`null`) or if it was an *expired* `OAuth2Token` class instance. 
 
-## Why does your fix actually solve it?
-The fix updates the condition to:
+If the token was a simple object, the code thought everything was fine and skipped the refresh. However, when it came time to use the token, the client only knew how to read from a proper `OAuth2Token` instance. Since it had a simple object instead, it just ignored it, leaving the request without a header.
+
+## Why does this fix solve it?
+I updated the logic to be more thorough. Now, the client will refresh the token if:
 ```typescript
 if (!this.oauth2Token || !(this.oauth2Token instanceof OAuth2Token) || this.oauth2Token.expired)
 ```
-This ensures a refresh is triggered if:
-1. The token is missing (`null`/`undefined`).
-2. The token is NOT an instance of `OAuth2Token` (handling plain objects).
-3. The token IS an instance but has expired.
+1.  The token is missing.
+2.  The token is **not** a proper `OAuth2Token` instance (this catches the simple object case).
+3.  The token has expired.
+
+This ensures we always have a valid class instance before we try to use it.
 
 ## Edge case not covered
-The current implementation doesn't handle **concurrent requests**. If multiple requests are made while the token is null or invalid, each will call `refreshOAuth2()` independently, potentially resulting in multiple token network calls (if `refreshOAuth2` were real) and unnecessary overhead.
+This fix doesn't handle **multiple requests happening at once**. If 10 requests start while the token is invalid, they will all try to refresh the token at the same time. In a real app, this would be wasteful and could cause issues with your auth server.
