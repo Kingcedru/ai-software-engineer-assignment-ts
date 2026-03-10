@@ -27,10 +27,31 @@ Requirements:
 
 ### 3) README updates (required)
 
-Update this README to include:
+## How to run the tests
 
-- how to run the tests locally,
-- how to build and run tests with Docker.
+### Locally
+
+Make sure you have Node.js installed. Then:
+
+1.  **Install dependencies**:
+    ```bash
+    npm install
+    ```
+2.  **Run tests**:
+    ```bash
+    npm test
+    ```
+
+### With Docker
+
+1.  **Build the Docker image**:
+    ```bash
+    docker build -t ai-assignment .
+    ```
+2.  **Run the tests in Docker**:
+    ```bash
+    docker run ai-assignment
+    ```
 
 ### 4) Find + fix a bug (required)
 
