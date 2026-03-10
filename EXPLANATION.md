@@ -10,7 +10,7 @@ if (!this.oauth2Token || (this.oauth2Token instanceof OAuth2Token && this.oauth2
 ```
 If `oauth2Token` was a plain object, `!this.oauth2Token` was false, and `this.oauth2Token instanceof OAuth2Token` was also false. Thus, the refresh logic was skipped, but the subsequent header injection also failed because it specifically looked for an `instanceof OAuth2Token`.
 
-## Why does your fix solve it?
+## Why does your fix actually solve it?
 The fix updates the condition to:
 ```typescript
 if (!this.oauth2Token || !(this.oauth2Token instanceof OAuth2Token) || this.oauth2Token.expired)
